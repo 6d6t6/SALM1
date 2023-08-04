@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>(SALM-1) Simple Artificial Language Model</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        .chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+            padding: 16px;
+            box-sizing: border-box;
+            margin-top: 20px;
+        }
+
+        .chat-box {
+            display: flex;
+            flex-direction: column;
+            height: 300px;
+            overflow-y: auto;
+            padding-bottom: 16px;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #007bff;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px 0 8px 8px;
+            margin: 4px 0;
+            max-width: 60%;
+            word-wrap: break-word;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background-color: #f0f0f0;
+            color: #000;
+            padding: 8px 12px;
+            border-radius: 0 8px 8px 8px;
+            margin: 4px 0;
+            max-width: 60%;
+            word-wrap: break-word;
+        }
+
+        .chat-input {
+            display: flex;
+            align-items: center;
+            margin-top: 16px;
+        }
+
+        .input-box {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            margin-right: 8px;
+            outline: none;
+        }
+
+        .send-button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-box" id="chatBox"></div>
+        <div class="chat-input">
+            <input type="text" class="input-box" placeholder="Type your message...">
+            <button class="send-button" id="sendButton"><i class="material-icons">send</i></button>
+        </div>
+    </div>
+
+    <script>
+        // Add your knowledge data here
+        const knowledge = {
+            "hello": "Hello! How can I help you today?",
+            "hi": "Hi there!",
+            "add": (a, b) => `The sum of ${a} and ${b} is ${a + b}.`,
+            "subtract": (a, b) => `The result of ${a} - ${b} is ${a - b}.`,
+            "multiply": (a, b) => `The result of ${a} × ${b} is ${a * b}.`,
+            "divide": (a, b) => b !== 0 ? `The result of ${a} ÷ ${b} is ${a / b}.` : "Division by zero is not allowed.",
+        };
+
+        const numberWords = {
+            "zero": 0,
+            "one": 1,
+            "two": 2,
+            "three": 3,
+            "four": 4,
+            "five": 5,
+            "six": 6,
+            "seven": 7,
+            "eight": 8,
+            "nine": 9,
+            "ten": 10,
+        };
+
+        const chatBox = document.getElementById('chatBox');
+        const inputBox = document.querySelector('.input-box');
+        const sendButton = document.getElementById('sendButton');
+
+        function displayUserMessage(message) {
+            const userMessage = document.createElement('div');
+            userMessage.className = 'user-message';
+            userMessage.textContent = message;
+            chatBox.appendChild(userMessage);
+            scrollToBottom();
+        }
+
+        function displayBotMessage(message) {
+            const botMessage = document.createElement('div');
+            botMessage.className = 'bot-message';
+            botMessage.textContent = message;
+            chatBox.appendChild(botMessage);
+            scrollToBottom();
+        }
+
+        function processUserInput() {
+            const userMessage = inputBox.value;
+            displayUserMessage(userMessage);
+            inputBox.value = "";
+            getBotResponse(userMessage);
+        }
+
+        function getBotResponse(userMessage) {
+            userMessage = userMessage.toLowerCase();
+
+            let response = "I'm sorry, I don't understand. Can you please be more specific?";
+
+            // Convert number words to actual numbers
+            Object.keys(numberWords).forEach((word) => {
+                const regex = new RegExp(word, 'g');
+                userMessage = userMessage.replace(regex, numberWords[word]);
+            });
+
+            // Regular expressions to match different patterns
+            const addRegex = /(\d+)\s*\+\s*(\d+)/;
+            const subtractRegex = /(\d+)\s*\-\s*(\d+)/;
+            const multiplyRegex1 = /(\d+)\s*(times|x|×|\*|multiply|multiplied by)\s*(\d+)/;
+            const multiplyRegex2 = /(\d+)\s*(\d+)/;
+            const divideRegex = /(\d+)\s*\/\s*(\d+)/;
+
+            // Check for known commands and patterns using regular expressions
+            if (knowledge[userMessage]) {
+                response = typeof knowledge[userMessage] === 'function' ? knowledge[userMessage](10, 5) : knowledge[userMessage];
+            } else if (addRegex.test(userMessage)) {
+                const [, a, b] = userMessage.match(addRegex);
+                response = `The sum of ${a} and ${b} is ${Number(a) + Number(b)}.`;
+            } else if (subtractRegex.test(userMessage)) {
+                const [, a, b] = userMessage.match(subtractRegex);
+                response = `The result of ${a} - ${b} is ${Number(a) - Number(b)}.`;
+            } else if (multiplyRegex1.test(userMessage)) {
+                const [, a, , b] = userMessage.match(multiplyRegex1);
+                response = `The result of ${a} × ${b} is ${Number(a) * Number(b)}.`;
+            } else if (multiplyRegex2.test(userMessage)) {
+                const [, a, b] = userMessage.match(multiplyRegex2);
+                response = `The result of ${a} × ${b} is ${Number(a) * Number(b)}.`;
+            } else if (divideRegex.test(userMessage)) {
+                const [, a, b] = userMessage.match(divideRegex);
+                response = b !== '0' ? `The result of ${a} ÷ ${b} is ${Number(a) / Number(b)}.` : "Division by zero is not allowed.";
+            }
+
+            displayBotMessage(response);
+        }
+
+        function scrollToBottom() {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        sendButton.addEventListener('click', () => {
+            if (inputBox.value.trim() !== "") {
+                processUserInput();
+            }
+        });
+
+        inputBox.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter' && inputBox.value.trim() !== "") {
+                processUserInput();
+            }
+        });
+
+        displayBotMessage("Hello! I am your Simple Artificial Language Model (SALM). You can ask me basic math questions.");
+
+    </script>
+</body>
+
+</html>
